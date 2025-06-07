@@ -4,9 +4,31 @@ export default defineContentScript({
   matches: ["https://music.youtube.com/*"],
 
   main() {
+    // WebSocket client → connects to Electron app
+    const socket = new WebSocket("ws://localhost:12345");
+
+    socket.addEventListener("open", () => {
+      console.log("WebSocket connected to Electron");
+    });
+
+    // Send lyrics to Electron app
+    function sendLyricsToElectron(songName, author, lyricsState) {
+      const message = {
+        songName,
+        author,
+        lyricsState, // now send { previous, current, next }
+        timestamp: Date.now(),
+      };
+
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(message));
+      }
+    }
+
     let lastKnownTime = 0;
     let previousSongId = "";
     let cachedLyrics = "";
+    let syncedLyrics = [];
 
     async function fetchLyrics(songName, author) {
       const apiUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(
@@ -19,28 +41,28 @@ export default defineContentScript({
         const apiResponse = await fetch(apiUrl);
         const json = await apiResponse.json();
 
-        let syncedLyrics = "";
+        let newSyncedLyrics = "";
         if (json && json.length > 0 && json[0].syncedLyrics) {
-          syncedLyrics = json[0].syncedLyrics;
-          console.log("Synced lyrics found:", syncedLyrics);
-          console.log("Found synced lyrics ✅");
+          newSyncedLyrics = json[0].syncedLyrics;
+          console.log("Synced lyrics found ✅");
         } else {
           console.log("No synced lyrics found.");
         }
 
-        // Update cachedLyrics
-        cachedLyrics = syncedLyrics;
+        cachedLyrics = newSyncedLyrics;
+        syncedLyrics = parseSyncedLyrics(newSyncedLyrics);
 
         // Broadcast to background:
         chrome.runtime.sendMessage({
           type: "LYRICS_UPDATED",
           songName,
           author,
-          syncedLyrics,
+          syncedLyrics: newSyncedLyrics,
         });
       } catch (err) {
         console.error("Error fetching lyrics:", err);
         cachedLyrics = "";
+        syncedLyrics = [];
 
         chrome.runtime.sendMessage({
           type: "LYRICS_UPDATED",
@@ -91,6 +113,9 @@ export default defineContentScript({
             lastKnownTime = currentTime;
 
             await fetchLyrics(songName, author);
+
+            // Send empty lyric to Electron → clear previous lyric
+            sendLyricsToElectron(songName, author, "");
           } else {
             // Detect if time reset (e.g. song restarted / next song):
             if (currentTime < lastKnownTime) {
@@ -109,8 +134,56 @@ export default defineContentScript({
             type: "CURRENT_TIME_UPDATE",
             currentTime,
           });
+
+          // Send CURRENT lyric to Electron:
+          // Find current lyric index:
+          let currentIndex = -1;
+          for (let i = 0; i < syncedLyrics.length; i++) {
+            const current = syncedLyrics[i];
+            const next = syncedLyrics[i + 1];
+
+            if (
+              currentTime >= current.time &&
+              (!next || currentTime < next.time)
+            ) {
+              currentIndex = i;
+              break;
+            }
+          }
+
+          if (currentIndex >= 0) {
+            const current = syncedLyrics[currentIndex];
+            const prev = syncedLyrics[currentIndex - 1];
+            const next = syncedLyrics[currentIndex + 1];
+
+            sendLyricsToElectron(songName, author, {
+              previous: prev ? prev.text : "",
+              current: current.text,
+              next: next ? next.text : "",
+            });
+          }
         }
       }
+    }
+
+    function parseSyncedLyrics(syncedLyrics) {
+      const lines = syncedLyrics.split("\n");
+      const parsed = [];
+
+      const timeRegex = /\[(\d+):(\d+\.\d+)\]/;
+
+      lines.forEach((line) => {
+        const match = timeRegex.exec(line);
+        if (match) {
+          const min = parseInt(match[1]);
+          const sec = parseFloat(match[2]);
+          const timeInSeconds = min * 60 + sec;
+          const text = line.replace(timeRegex, "").trim();
+          parsed.push({ time: timeInSeconds, text });
+        }
+      });
+
+      return parsed;
     }
 
     function timeStringToSeconds(timeString) {
