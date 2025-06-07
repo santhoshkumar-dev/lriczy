@@ -1,12 +1,20 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function App() {
   const [songName, setSongName] = useState("Loading...");
   const [author, setAuthor] = useState("Loading...");
   const [syncedLyrics, setSyncedLyrics] = useState([]);
-  const [currentLyric, setCurrentLyric] = useState("");
+  const [lyricsState, setLyricsState] = useState({
+    previous: "",
+    current: "",
+    next: "",
+  });
+
+  // For fade control
+  const [displayedLyric, setDisplayedLyric] = useState(""); // what is shown now
+  const [fadeClass, setFadeClass] = useState("opacity-100"); // fade in/out class
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -48,12 +56,22 @@ function App() {
         for (let i = 0; i < syncedLyrics.length; i++) {
           const current = syncedLyrics[i];
           const next = syncedLyrics[i + 1];
+          const prev = syncedLyrics[i - 1];
 
           if (
             currentTime >= current.time &&
             (!next || currentTime < next.time)
           ) {
-            setCurrentLyric(current.text);
+            if (current.text !== lyricsState.current) {
+              // Only when lyric changes, do fade
+              triggerLyricFade(current.text);
+            }
+
+            setLyricsState({
+              previous: prev ? prev.text : "",
+              current: current.text,
+              next: next ? next.text : "",
+            });
 
             chrome.runtime.sendMessage({
               type: "UPDATE_FLOATING_LYRIC",
@@ -71,7 +89,7 @@ function App() {
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
-  }, [syncedLyrics]);
+  }, [syncedLyrics, lyricsState.current]);
 
   function parseSyncedLyrics(syncedLyrics) {
     const lines = syncedLyrics.split("\n");
@@ -93,30 +111,41 @@ function App() {
     return parsed;
   }
 
-  function handleOpenLyricsWindow() {
-    chrome.windows.create(
-      {
-        url: chrome.runtime.getURL("lyrics_window.html"),
-        type: "popup",
-        width: 400,
-        height: 200,
-        focused: true,
-      },
-      (newWindow) => {
-        // Immediately send current lyric → so window does not show Waiting
-        chrome.runtime.sendMessage({
-          type: "UPDATE_FLOATING_LYRIC",
-          lyric: currentLyric,
-        });
-      }
-    );
+  // Fade out → change lyric → fade in
+  function triggerLyricFade(newLyric) {
+    setFadeClass("opacity-0"); // fade out
+    setTimeout(() => {
+      setDisplayedLyric(newLyric); // change lyric
+      setFadeClass("opacity-100"); // fade in
+    }, 200); // fade out duration (ms) → you can tune this
   }
 
+  // On first mount, set displayed lyric too
+  useEffect(() => {
+    setDisplayedLyric(lyricsState.current);
+  }, []);
+
+  const openFloatingLyricsWindow = () => {
+    chrome.windows.create({
+      url: chrome.runtime.getURL("lyrics_window.html"),
+      type: "popup",
+      width: 400,
+      height: 300,
+    });
+  };
+
   return (
-    <div className="min-w-[320px] p-4 bg-gray-900 text-white rounded-md shadow-lg space-y-3">
+    <div className="min-w-2xl p-4 bg-gray-900 text-white rounded-md shadow-lg space-y-3">
       <h1 className="text-xl font-bold text-indigo-400 text-center">
         🎵 Lyrics Sync
       </h1>
+
+      <button
+        onClick={openFloatingLyricsWindow}
+        className="px-4 py-2 bg-indigo-600 rounded text-white"
+      >
+        Open Floating Lyrics
+      </button>
 
       <div>
         <p className="text-sm text-gray-400">Current Song:</p>
@@ -128,19 +157,51 @@ function App() {
         <h3 className="text-lg font-semibold truncate">👤 {author}</h3>
       </div>
 
-      <div>
-        <p className="text-sm text-gray-400">Current Lyric:</p>
-        <h3 className="text-lg font-semibold text-yellow-400 h-16 flex items-center justify-center text-center">
-          {currentLyric || "Waiting..."}
-        </h3>
+      {/* Previous Lyric */}
+      <div className="text-center text-[#b3b3b3] text-xl relative h-[2em] overflow-hidden">
+        <span
+          className="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out"
+          style={{
+            opacity: lyricsState.previous ? 0.6 : 0,
+            transform: lyricsState.previous
+              ? "translateY(0) scale(0.9)"
+              : "translateY(40px) scale(0.8)",
+            filter: lyricsState.previous ? "blur(0.5px)" : "blur(4px)",
+          }}
+        >
+          {lyricsState.previous || <>&nbsp;</>}
+        </span>
       </div>
 
-      <button
-        onClick={handleOpenLyricsWindow}
-        className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 w-full"
-      >
-        Open Floating Lyrics Window
-      </button>
+      {/* Current Lyric → premium fade version */}
+      <div className="text-center text-white text-3xl font-bold relative h-[2em] overflow-hidden">
+        <span
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ease-in-out ${fadeClass}`}
+          style={{
+            transform: "translateY(0) scale(1)",
+            textShadow: "0 0 15px rgba(30, 215, 96, 0.4)",
+            willChange: "opacity",
+          }}
+        >
+          {displayedLyric || <>&nbsp;</>}
+        </span>
+      </div>
+
+      {/* Next Lyric */}
+      <div className="text-center text-[#a0a0a0] text-xl relative h-[2em] overflow-hidden">
+        <span
+          className="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out"
+          style={{
+            opacity: lyricsState.next ? 0.6 : 0,
+            transform: lyricsState.next
+              ? "translateY(0) scale(0.9)"
+              : "translateY(-40px) scale(0.8)",
+            filter: lyricsState.next ? "blur(0.5px)" : "blur(4px)",
+          }}
+        >
+          {lyricsState.next || <>&nbsp;</>}
+        </span>
+      </div>
     </div>
   );
 }
