@@ -144,8 +144,11 @@ function App() {
     chrome.windows.create({
       url: chrome.runtime.getURL("lyrics_window.html"),
       type: "popup",
-      width: 400,
-      height: 300,
+      focused: true,
+      width: 500,
+      height: 250,
+      top: 100,
+      left: 100,
     });
   };
 
