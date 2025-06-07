@@ -113,6 +113,17 @@ export default defineContentScript({
       }
     }
 
+    function timeStringToSeconds(timeString) {
+      const parts = timeString.split(":").map(Number);
+      if (parts.length === 2) {
+        const min = parts[0];
+        const sec = parts[1];
+        return min * 60 + sec;
+      } else {
+        return 0;
+      }
+    }
+
     setInterval(checkForSongChange, 2000); // Check every 2 seconds
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -146,15 +157,31 @@ export default defineContentScript({
       }
     });
 
-    function timeStringToSeconds(timeString) {
-      const parts = timeString.split(":").map(Number);
-      if (parts.length === 2) {
-        const min = parts[0];
-        const sec = parts[1];
-        return min * 60 + sec;
-      } else {
-        return 0;
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === "PLAYER_ACTION") {
+        const action = message.action;
+
+        if (action === "playPause") {
+          const playPauseButton = document.querySelector(
+            'button[aria-label="Play"], button[aria-label="Pause"]'
+          );
+          if (playPauseButton) playPauseButton.click();
+        }
+
+        if (action === "next") {
+          const nextButton = document.querySelector(
+            `button[aria-label="Next"]`
+          );
+          if (nextButton) nextButton.click();
+        }
+
+        if (action === "previous") {
+          const prevButton = document.querySelector(
+            `button[aria-label="Previous"]`
+          );
+          if (prevButton) prevButton.click();
+        }
       }
-    }
+    });
   },
 });

@@ -44,17 +44,34 @@ chrome.runtime.onMessage.addListener((message) => {
       message.songName + " - " + message.author;
 
     lyricsArray = parseSyncedLyrics(message.syncedLyrics);
+
+    // FIX: Reset state!
+    lyricsState = {
+      previous: "",
+      current: "",
+      next: "",
+    };
+
+    // Clear DOM immediately:
+    updatePreviousNextLines();
+    triggerLyricFade(""); // empty lyric → fade out
   }
 
   if (message.type === "CURRENT_TIME_UPDATE") {
     const currentTime = message.currentTime;
+
+    const preRollOffset = 0.4; // show 400ms earlier → tune this if you want faster/slower
 
     for (let i = 0; i < lyricsArray.length; i++) {
       const current = lyricsArray[i];
       const next = lyricsArray[i + 1];
       const prev = lyricsArray[i - 1];
 
-      if (currentTime >= current.time && (!next || currentTime < next.time)) {
+      // Show current lyric slightly before actual time using preRollOffset
+      if (
+        currentTime >= current.time - preRollOffset &&
+        (!next || currentTime < next.time)
+      ) {
         // Only when current lyric changes, trigger fade
         if (current.text !== lyricsState.current) {
           triggerLyricFade(current.text);
@@ -100,18 +117,24 @@ function updatePreviousNextLines() {
 function triggerLyricFade(newLyric) {
   const currentEl = document.getElementById("currentLyric");
 
-  // Fade out
-  currentEl.classList.remove("fade-in");
-  currentEl.classList.add("fade-out");
+  // Clear current content
+  currentEl.innerHTML = "";
 
-  setTimeout(() => {
-    // Change lyric
-    currentEl.innerText = newLyric;
+  // Split by words → not letters!
+  newLyric.split(" ").forEach((word, index) => {
+    const span = document.createElement("span");
+    span.textContent = word + " "; // add space after each word
+    span.style.animationDelay = `${index * 0.05}s`; // 0.1s per word
+    currentEl.appendChild(span);
+  });
 
-    // Fade in
-    currentEl.classList.remove("fade-out");
-    currentEl.classList.add("fade-in");
+  displayedLyric = newLyric;
+}
 
-    displayedLyric = newLyric;
-  }, 200); // match your App.tsx fade-out duration
+function sendPlayerAction(action) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs.length === 0) return;
+
+    chrome.tabs.sendMessage(tabs[0].id, { type: "PLAYER_ACTION", action });
+  });
 }

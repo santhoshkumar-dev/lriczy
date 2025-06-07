@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Floating Lyrics</title>
     <style>
       body {
@@ -29,6 +30,33 @@
         opacity: 0.6;
       }
 
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .current-lyric span {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: wordFadeIn 0.4s forwards;
+        white-space: pre; /* fix space issue */
+      }
+
+      @keyframes wordFadeIn {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
       .current-lyric {
         font-size: 28px;
         font-weight: bold;
@@ -36,6 +64,7 @@
         text-shadow: 0 0 15px rgba(30, 215, 96, 0.4);
         opacity: 1;
         transition: opacity 0.5s ease;
+        animation: pulse 0.8s ease;
       }
 
       .fade-in {

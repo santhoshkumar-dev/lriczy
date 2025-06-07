@@ -63,7 +63,6 @@ function App() {
             (!next || currentTime < next.time)
           ) {
             if (current.text !== lyricsState.current) {
-              // Only when lyric changes, do fade
               triggerLyricFade(current.text);
             }
 
@@ -81,6 +80,22 @@ function App() {
             break;
           }
         }
+      }
+
+      // ADD THIS:
+      if (message.type === "BROADCAST_LYRICS") {
+        console.log("App received BROADCAST_LYRICS", message.songName);
+
+        const parsedLyrics = parseSyncedLyrics(message.syncedLyrics);
+        setSyncedLyrics(parsedLyrics);
+
+        setLyricsState({
+          previous: "",
+          current: "",
+          next: "",
+        });
+
+        triggerLyricFade(""); // Reset displayed lyric
       }
     };
 
@@ -134,6 +149,14 @@ function App() {
     });
   };
 
+  function sendPlayerAction(action) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length === 0) return;
+
+      chrome.tabs.sendMessage(tabs[0].id, { type: "PLAYER_ACTION", action });
+    });
+  }
+
   return (
     <div className="min-w-2xl p-4 bg-gray-900 text-white rounded-md shadow-lg space-y-3">
       <h1 className="text-xl font-bold text-indigo-400 text-center">
@@ -174,6 +197,7 @@ function App() {
       </div>
 
       {/* Current Lyric → premium fade version */}
+      {/* Current Lyric → premium fade version */}
       <div className="text-center text-white text-3xl font-bold relative h-[2em] overflow-hidden">
         <span
           className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ease-in-out ${fadeClass}`}
@@ -183,7 +207,22 @@ function App() {
             willChange: "opacity",
           }}
         >
-          {displayedLyric || <>&nbsp;</>}
+          {/* Render each word */}
+          {displayedLyric ? (
+            displayedLyric.split(" ").map((word, index) => (
+              <span
+                key={index}
+                className="current-lyric-word"
+                style={{
+                  animationDelay: `${index * 0.05}s`,
+                }}
+              >
+                {word + " "}
+              </span>
+            ))
+          ) : (
+            <>&nbsp;</>
+          )}
         </span>
       </div>
 
@@ -201,6 +240,20 @@ function App() {
         >
           {lyricsState.next || <>&nbsp;</>}
         </span>
+      </div>
+
+      <div className="flex gap-3 items-center">
+        <button type="button" onClick={() => sendPlayerAction("playPause")}>
+          Play / Pause
+        </button>
+
+        <button type="button" onClick={() => sendPlayerAction("previous")}>
+          Previous
+        </button>
+
+        <button type="button" onClick={() => sendPlayerAction("next")}>
+          Next
+        </button>
       </div>
     </div>
   );

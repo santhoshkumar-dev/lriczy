@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+@keyframes wordFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.current-lyric-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: wordFadeIn 0.4s forwards;
+  white-space: pre;
+}
