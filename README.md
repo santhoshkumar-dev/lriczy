@@ -12,7 +12,7 @@ A simple Chrome Extension to show **floating synced lyrics** while listening to 
 
 ## Demo
 
-![Floating Lyrics Extension Demo](https://raw.githubusercontent.com/santhoshkumar-dev/lriczy/a2313c0193cbe821e7a138dc25a843bac3081ddc/public/ezgif-39dd01745f19eb.gif)
+![Floating Lyrics Extension Demo](https://raw.githubusercontent.com/santhoshkumar-dev/lriczy/refs/heads/main/public/demo.gif)
 
 ---
 
