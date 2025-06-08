@@ -1,6 +1,10 @@
 {
-  "name": "wxt-react-starter",
+  "name": "Lyriczy",
   "description": "manifest.json description",
+  "author": {
+    "name": "Santhosh Kumar",
+    "email": "iamsanthosh2203@gmail.com"
+  },
   "private": true,
   "version": "0.0.0",
   "type": "module",

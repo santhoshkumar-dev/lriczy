@@ -12,7 +12,48 @@ A simple Chrome Extension to show **floating synced lyrics** while listening to 
 
 ## Demo
 
-👉 [You can insert a short GIF or video here — highly recommended for GitHub and Showcase posts!]
+![Floating Lyrics Extension Demo](https://raw.githubusercontent.com/santhoshkumar-dev/lriczy/a2313c0193cbe821e7a138dc25a843bac3081ddc/public/ezgif-39dd01745f19eb.gif)
+
+---
+
+## How to Use
+
+1. **Download the Extension:**  
+   Go to the [Releases](https://github.com/santhoshkumar-dev/lriczy/releases) page and download the latest `lyrics-v1.zip` file.
+
+2. **Extract the ZIP:**  
+   Unzip the downloaded file to a folder on your computer.
+
+3. **Load in Chrome:**
+
+   - Open `chrome://extensions/` in your browser.
+   - Enable **Developer mode** (top right).
+   - Click **Load unpacked** and select the extracted folder.
+
+4. **Start Using:**  
+   The extension icon will appear in your Chrome toolbar. Open [YouTube Music](https://music.youtube.com) and enjoy floating synced lyrics!
+
+## Windows Portable App
+
+A **portable `.exe` app** is included for Windows users. This app syncs with the music playing on YouTube Music and connects directly to the extension for enhanced lyric synchronization.
+
+### How to Use the Portable App
+
+1.  **Download the App:**  
+    Get the latest `lyrics-sync.exe` from the [Releases](https://github.com/santhoshkumar-dev/lriczy/releases) page.
+
+2.  **Run the App:**  
+    Double-click `lyrics-sync.exe` (no installation needed).
+
+3.  **Connect to Extension:**  
+    The app will automatically detect music playing on YouTube Music and sync lyrics with the extension.
+
+**Note:**
+
+- The portable app runs in the background and requires no setup.
+- Make sure Chrome and the extension are running for full functionality.
+- No data is sent externally; all syncing happens locally.
+- If lyrics don't appear in the app, make sure the extension is installed correctly and try reloading YouTube Music.
 
 ---
 
@@ -42,7 +83,7 @@ A simple Chrome Extension to show **floating synced lyrics** while listening to 
 
 ```bash
 git clone https://github.com/santhoshkumar-dev/lyrics
-cd your-repo-name
+cd lyrics
 ```
 
 ### 2️⃣ Install dependencies
