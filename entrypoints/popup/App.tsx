@@ -245,7 +245,11 @@ function App() {
         </span>
       </div>
 
-      <div className="flex gap-3 items-center">
+      {/* Player controls (optional) */}
+
+      {/* Not working */}
+
+      {/* <div className="flex gap-3 items-center">
         <button type="button" onClick={() => sendPlayerAction("playPause")}>
           Play / Pause
         </button>
@@ -257,7 +261,7 @@ function App() {
         <button type="button" onClick={() => sendPlayerAction("next")}>
           Next
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }
