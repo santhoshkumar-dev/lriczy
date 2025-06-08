@@ -82,8 +82,8 @@ A **portable `.exe` app** is included for Windows users. This app syncs with the
 ### 1️⃣ Clone the repo
 
 ```bash
-git clone https://github.com/santhoshkumar-dev/lyrics
-cd lyrics
+git clone https://github.com/santhoshkumar-dev/lriczy
+cd lriczy
 ```
 
 ### 2️⃣ Install dependencies
