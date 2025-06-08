@@ -31,8 +31,16 @@ export default defineContentScript({
     let syncedLyrics = [];
 
     async function fetchLyrics(songName, author) {
+      console.log("Fetching lyrics for:", songName, "by", author);
+
+      // Build query
+      let query = songName;
+      if (author && author !== "Unknown author") {
+        query = author + " " + songName;
+      }
+
       const apiUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(
-        author + " " + songName
+        query
       )}`;
 
       console.log("Fetching lyrics from:", apiUrl);
@@ -82,15 +90,24 @@ export default defineContentScript({
         'yt-formatted-string.byline.style-scope.ytmusic-player-bar a[href^="channel"]'
       );
 
+      let author = "Unknown author";
+
+      if (authorLinkElement && authorLinkElement.textContent) {
+        author = authorLinkElement.textContent.trim();
+      } else {
+        // Fallback to first span inside byline
+        const authorSpanElement = document.querySelector(
+          "yt-formatted-string.byline.style-scope.ytmusic-player-bar > span"
+        );
+        if (authorSpanElement && authorSpanElement.textContent) {
+          author = authorSpanElement.textContent.trim();
+        }
+      }
+
       const songName =
         titleElement && titleElement.textContent
           ? titleElement.textContent.trim()
           : "No song playing";
-
-      const author =
-        authorLinkElement && authorLinkElement.textContent
-          ? authorLinkElement.textContent.trim()
-          : "Unknown author";
 
       const currentSongId = songName + " - " + author;
 
